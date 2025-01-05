@@ -60,4 +60,4 @@ def plot_volume(data):
     fig = go.Figure()
     fig.add_trace(go.Scatter(x=data['Date'], y=data['Volume'], name="stock_volume"))
     fig.update_layout(title_text="Stock Volume Over Time", xaxis_rangeslider_visible=True)
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, use_container_width=True) 
