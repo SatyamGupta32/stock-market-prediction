@@ -78,10 +78,6 @@ This web application is designed to predict stock market trends using machine le
 
 Contributions are welcome! If you'd like to enhance the app or fix any issues, please open an issue or submit a pull request.
 
-## License
-
-This project is licensed under the [MIT License](LICENSE).
-
 ## Acknowledgments
 
 - Special thanks to the creators of Streamlit, Prophet, yfinance, Plotly, and scikit-learn.
