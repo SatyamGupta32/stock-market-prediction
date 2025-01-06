@@ -88,27 +88,53 @@ def plot_volume(data):
     fig.layout.update(title_text="Stock Volume Data", xaxis_rangeslider_visible=True)
     st.plotly_chart(fig)
 
-# Data loading
-with st.spinner("Loading data..."):
-    data = load_data(selected_stock, start_date, end_date)
-    sleep(1)
-# Forecasting
-df_train = data[["Date", "Close"]].rename(columns={"Date": "ds", "Close": "y"})
-# Ensure 'y' is numeric and handle missing values
-if "Close" not in df_train.columns or df_train.empty:
-    st.error("No valid data available for forecasting. Please adjust the date range or select a different stock.")
-else:
-    df_train = df_train.dropna()  # Drop rows with missing values
-    df_train["y"] = pd.to_numeric(df_train["y"], errors="coerce")  # Coerce invalid values to NaN
-    df_train = df_train.dropna()  # Drop rows with NaN after conversion
+# Preserve uploaded data in session state
+if "uploaded_file" not in st.session_state:
+    st.session_state.uploaded_file = None
+if "uploaded_data" not in st.session_state:
+    st.session_state.uploaded_data = None
 
-    if df_train.empty:
-        st.error("No valid data available after cleaning. Please select a different stock or date range.")
+# File uploader
+uploaded_file = st.sidebar.file_uploader("Upload CSV File", type=["csv"])
+
+# Store uploaded file in session state
+if uploaded_file is not None:
+    st.session_state.uploaded_file = uploaded_file
+    st.session_state.uploaded_data = pd.read_csv(uploaded_file)  # Read CSV immediately
+    st.sidebar.success("File uploaded successfully!")
+
+# Analyze button
+if st.sidebar.button("Analyze Data"):
+    # Use uploaded data if available
+    if st.session_state.uploaded_data is not None:
+        data = st.session_state.uploaded_data
     else:
-        model = Prophet()
-        model.fit(df_train)
-        future = model.make_future_dataframe(periods=period)
-        forecast = model.predict(future)
+        with st.spinner("Loading data..."):
+            data = load_data(selected_stock, start_date, end_date)
 
-        end_date_datetime = pd.to_datetime(end_date)
-        forecast = forecast[forecast["ds"] >= end_date_datetime]
+    # Check if required columns exist
+    if "Date" not in data.columns or "Close" not in data.columns:
+        st.error("Uploaded data must contain 'Date' and 'Close' columns.")
+    else:
+        # Forecasting
+        df_train = data[["Date", "Close"]].rename(columns={"Date": "ds", "Close": "y"})
+        df_train = df_train.dropna()
+        df_train["y"] = pd.to_numeric(df_train["y"], errors="coerce")
+        df_train = df_train.dropna()
+
+        if df_train.empty:
+            st.error("No valid data available after cleaning. Please check the input data.")
+        else:
+            # Prophet Model
+            model = Prophet()
+            model.fit(df_train)
+            future = model.make_future_dataframe(periods=period)
+            forecast = model.predict(future)
+
+            # Display forecast
+            st.write("Forecast Results:", forecast.head())
+            fig = plot_plotly(model, forecast)
+            st.plotly_chart(fig)
+
+            # Optional: Plot original data
+            plot_data(data)
